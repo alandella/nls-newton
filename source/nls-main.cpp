@@ -3,7 +3,7 @@
 
 	program file nls-newton.cpp
 
-	We want to solve the 1-D and DIM-D NLS:
+	We want to solve the 1-D and DIM-D square NLS:
 
 	0 = F(x)
 
@@ -24,37 +24,50 @@
 
 int main(){
 
-	const int DIM = 2;
+	/*------------------------------------------------*/
 
-	double* ris;
+	const int DIM = 3;
 
-	double* x0 = (double*)malloc(DIM*sizeof(double));
+	double* x0_vec = (double*)malloc(DIM*sizeof(double));
+	//
+	x0_vec[0] = 1.0;
+	x0_vec[1] = 1.0;
+	x0_vec[2] = 1.0;
 
-	x0[0] = 2.5;
-	x0[1] = 5.0;
-
-	double xtol = 1.e-9;
-	double Ftol = 1.e-8;
+	double xtol = 1.e-7;
+	double Ftol = 1.e-6;
 
 	printf("NLS-Newton Iteration\n\n");
 
-	ris = nlsnewton_vec(&testfun_vec, x0, xtol, Ftol, DIM);
+	double* ris_vec = nlsnewton_vec(&testfun_vec, x0_vec, xtol, Ftol, DIM);
 
-	printf("x_opt = %e , %e\n", ris[0], ris[1]);
+	// solutions should be approx (0.8332, 0.0351, -0.4985)
+	printf("x_opt = %e , %e, %e\n", ris_vec[0], ris_vec[1], ris_vec[2]);
 
-	double* Fris = testfun_vec(ris,DIM);
+	double* Fris_vec = testfun_vec(ris_vec, DIM);
 
-	double Fx = norm2_vec(Fris, DIM);
+	double Fx_vec = norm2_vec(Fris_vec, DIM);
+
+	printf("norm(F(x_opt)) = %e\n\n", Fx_vec);
+
+	/*------------------------------------------------*/
+	printf("NLE-Newton Iteration\n\n");
+
+	double x0 = 2.1;
+
+	double ris = nlsnewton(&testfun, x0, xtol, Ftol);
+
+	printf("x_opt = %e\n", ris);
+
+	double Fx = testfun(ris);
 
 	printf("norm(F(x_opt)) = %e\n\n", Fx);
 
-	system("pause");
+	/*------------------------------------------------*/
 
+	system("pause");
 	return 0;
 }
-
-
-
 
 
 // test function for scalar system
@@ -62,17 +75,87 @@ double testfun(double x){
 
 	double Fx;
 
-	Fx = pow(x, 2) - sin(x + 1);
+	Fx = 5*x + log(fabs(x)) - 10000.;
 
 	return Fx;
 }
 
 // solver for scalar system
-/*
-double nlsnewton(double testfun(double x), double x0, double xtol, double Ftol){
-	...
+double nlsnewton(double fun(double x), double x0, double xtol, double Ftol){
+	
+	// we have the dummy xD point, before iteration:
+	double x0_new;
+	double x1; 
+
+	// we declare the function at x0
+	double Fx0;
+	double Fx1;
+
+	// we declare the jacobian
+	double Jx0;
+
+	// we declare the main delta_x
+	double delta_x;
+
+	x0_new = x0;
+
+	Fx0 = fun(x0_new);
+
+	// we evaluate the norms of function and variables
+	double Dx = 10.;
+
+	double Fx = fabs(Fx0);
+
+	if (Fx < Ftol){
+		printf("Initial point is a solution!\n");
+		return x0_new;
+	}
+
+	int N_iter = 0;
+
+	double omega = 1.0;
+
+	// entering the main calculation cycle
+	while ( eval_DxFx(Dx, xtol, Fx, Ftol) ){
+
+		N_iter++;
+
+		//we evaluate the function at x0
+		Fx0 = fun(x0_new);
+
+		//we begin, by evaluating the jacobian at x0
+		Jx0 = calc_dFdx(fun, x0_new);
+
+		//we calculate the matrix*vector delta_x
+		delta_x = Fx0 / Jx0;
+
+		//we obtain the new value
+		x1 = x0_new - omega*delta_x;
+
+		//we evaluate the function at x1
+		Fx1 = fun(x1);
+
+		//we calculate the required differences:
+		Dx = fabs(x0_new - x1);
+		//
+		Fx = fabs(Fx1);
+
+		printf("IT%d\tDx = %e\n\tFx = %e\n\n", N_iter, Dx, Fx);
+		//getchar();
+
+		//we advance the cycle
+		x0_new = x1;
+
+		if (N_iter > 1e4){
+			printf("niter exceeded\n");
+			break;
+		}
+	
+	}
+
+	return x0_new;
+
 }
-*/
 
 // test function for vector system
 double* testfun_vec(double* x, int DIM){
@@ -81,9 +164,12 @@ double* testfun_vec(double* x, int DIM){
 
 	Fx = (double*)malloc(DIM*sizeof(double));
 
-	//nonlinear system
-	Fx[0] = -log(fabs(x[0])) + x[1];
-	Fx[1] = x[0] + x[1] - 1.;
+	//nonlinear system, from 
+	//http://fourier.eng.hmc.edu/e176/lectures/NM/node21.html 
+
+	Fx[0] = 3.*x[0] - cos(x[1]*x[2]) - 3./2.;
+	Fx[1] = 4.*pow(x[0], 2) - 625.*pow(x[1], 2) + 2.*x[2] - 1.;
+	Fx[2] = 20.*x[2] + exp(-x[0] * x[1]) + 9.;
 
 	return Fx;
 }
@@ -94,8 +180,6 @@ double* nlsnewton_vec(double* fun(double* x, int DIM), double* x0, double xtol, 
 	// we have the dummy xD point, before iteration:
 	double* x0_new = (double*) malloc(DIM*sizeof(double));
 	double* x1 = (double*) malloc(DIM*sizeof(double));
-	//
-	double* F_zero = (double*)calloc(DIM , sizeof(double));
 
 	// we declare the function at x0 
 	double* Fx0;
@@ -108,16 +192,21 @@ double* nlsnewton_vec(double* fun(double* x, int DIM), double* x0, double xtol, 
 	// we declare the main delta_x
 	double* delta_x;
 
+	// the first x0 is the one supplied
+	for (int j = 0; j < DIM; j++){
+		x0_new[j] = x0[j];
+	}
+
 	Fx0 = fun(x0_new, DIM);
 
 	// we evaluate the norms of function and variables
 	double Dx = 10.;
 
 	double Fx = norm2_vec(Fx0, DIM);
-	
-	// the first x0 is the one supplied
-	for (int j = 0; j < DIM; j++){
-		x0_new[j] = x0[j];
+
+	if (Fx < Ftol){
+		printf("Initial point is a solution!\n");
+		return x0_new;
 	}
 
 	int N_iter = 0;
@@ -125,9 +214,7 @@ double* nlsnewton_vec(double* fun(double* x, int DIM), double* x0, double xtol, 
 	double omega = 1.0;
 
 	// entering the main calculation cycle
-	//while (fmax(fabs(Dx - xtol), fabs(Fx - Ftol)) >= fmax(xtol,Ftol)*1.1){
-	//while (fmax(fabs(Dx - xtol), fabs(Fx - Ftol)) >= 1.e-7){
-	while ((Dx >= xtol) && (Fx >= Ftol)){
+	while ( eval_DxFx(Dx, xtol, Fx, Ftol) ){
 		
 		N_iter++;
 
@@ -172,8 +259,28 @@ double* nlsnewton_vec(double* fun(double* x, int DIM), double* x0, double xtol, 
 	}
 
 	free(x1);
-	free(F_zero);
 
 	return x0_new;
 
+}
+
+// while evaluation for true condition
+int eval_DxFx(double Dx, double xtol, double Fx, double Ftol){
+
+	if (fabs(Dx - xtol) > fabs(Fx - Ftol)){		//valuta il maggiore dei due
+		if (fabs(Dx - xtol) > 1.001*xtol){		
+			return 1;							//1 != 0 true, continue while
+		}
+		else {
+			return 0;							//0 != 0 false, stop while
+		}
+	}
+	else {
+		if (fabs(Fx - Ftol) > 1.001*Ftol){
+			return 1;
+		}
+		else{
+			return 0;
+		}
+	}
 }

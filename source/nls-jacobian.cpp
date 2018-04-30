@@ -52,4 +52,16 @@ double** calc_Jac(double* fun(double* x, int DIM), double* xn, int DIM){
 	return Jac;
 }
 
+double calc_dFdx(double fun(double x), double xn){
+
+	double xnm1 = xn + 1.e-8;
+
+	//evaluate the function values
+	double F_xn = fun(xn);
+	double F_xnm1 = fun(xnm1);
+
+	return (F_xn - F_xnm1) / (xn - xnm1);
+
+}
+
 
