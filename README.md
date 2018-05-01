@@ -56,7 +56,7 @@ You may choose to modify and improve it to your liking. Possible improvements ma
 
 2. Ease the computational load. The jacobian evaluation is explicit, meaning that also its inverse is computed to solve the linear system for each Newton step. This method is by no means fast. However there are algorithms that allow linear systems to be solved without inversion (LU decomposition, Gauss-Jordan elimination and so on). What is the fastest method?
 
-3. Expand to non-square systems. Using the pseudo-jacobian method, it is possible to solve M * DIM nonlinear systems (M > DIM). How can this be implemented? 
+3. Expand to non-square systems. The solver can now handle DIM * DIM square systems (at least invertible jacobians). Using the pseudo-jacobian method, it is possible to solve M * DIM nonlinear systems with M > DIM. How can this be implemented? 
 
 In fact, they are limited only by intuition and imagination.
 
