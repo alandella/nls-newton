@@ -9,10 +9,10 @@ The solver is a couple of C/C++ compliant files, one source and one header. As a
 The key point is in the following functions:
 
 ```
-void nlsnewton()
+double nlsnewton()
 void nlsnewton_vec()
 ```
-As they are the "actual solver", with the closest syntax as MATLAB fsolve. Some extras have been added as the relaxation parameter omega, and the dimensionality of the problem.
+As they are the "actual solver", with the closest syntax as MATLAB fsolve. Some extras have been added as the relaxation parameter omega, and the dimensionality of the problem. The solver's architecture is based on dynamic allocation, which allows it to be faster than fsolve in most cases (by tuning omega).
 
 ### Prerequisites
 
