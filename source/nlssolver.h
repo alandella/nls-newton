@@ -3,6 +3,10 @@
 
 	file header per solver
 */
+#include<stdio.h>
+#include<stdlib.h>
+#define _USE_MATH_DEFINES
+#include<math.h>
 
 /***** UTILITIES *****/
 
@@ -34,7 +38,7 @@ void calc_matvec(double** A, double* b, int DIM, double* &C);
 /***** JACOBIAN *****/
 
 //calculate numerical jacobian, internal h = 1.e-8
-void calc_Jac(void fun(double* x, int DIM, double Fx[]), double* xn, int DIM, double** &Jac);
+void calc_Jac(void fun(double* x, double Fx[]), double* xn, int DIM, double** &Jac);
 
 //calculate numerical derivative, internal h = 1.e-8
 double calc_dFdx(double fun(double x), double xn);
@@ -46,7 +50,7 @@ double calc_dFdx(double fun(double x), double xn);
 double nlsnewton(double fun(double x), double x0, double xtol, double Ftol);
 
 // solver for vector system
-void nlsnewton_vec(void fun(double* x, int DIM, double Fx[]), double* x0, double xtol, double Ftol, int DIM, double xN[]);
+void nlsnewton_vec(void fun(double* x, double Fx[]), double* x0, double xtol, double Ftol, int DIM, double xN[]);
 
 // "true" while condition evaluation
 int eval_DxFx(double Dx, double xtol, double Fx, double Ftol);

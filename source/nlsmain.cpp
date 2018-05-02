@@ -12,18 +12,13 @@
 	In order to do that, we need two functions: one for the system, F, and the
 	other for the solver, which takes as input the system function's handle.
 */
-
-#include<stdio.h>
-#include<stdlib.h>
-#define _USE_MATH_DEFINES
-#include<math.h>
 #include"nlssolver.h"
 
 // test function for scalar system
 double testfun(double x);
 
 // test function for vector system
-void testfun_vec(double* x, int DIM, double Fx[]);
+void testfun_vec(double* x, double Fx[]);
 
 int main(){
 
@@ -68,7 +63,7 @@ int main(){
 	//we print the result and the fun norm at the result
 	printf("x_opt = %e , %e , %e\n", ris_vec[0], ris_vec[1], ris_vec[2]);
 	//
-	testfun_vec(ris_vec, DIM, Fris_vec);
+	testfun_vec(ris_vec, Fris_vec);
 	//
 	printf("norm(F(x_opt)) = %e\n\n", norm2_vec(Fris_vec, DIM));
 	system("pause");
@@ -87,7 +82,7 @@ double testfun(double x){
 }
 
 // test function for vector system
-void testfun_vec(double* x, int DIM, double Fx[]){
+void testfun_vec(double* x, double Fx[]){
 
 	//nonlinear system, from 
 	//http://fourier.eng.hmc.edu/e176/lectures/NM/node21.html 

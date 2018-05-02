@@ -3,13 +3,7 @@
 
 	program file solver
 */
-
-#include<stdio.h>
-#include<stdlib.h>
-#define _USE_MATH_DEFINES
-#include<math.h>
 #include"nlssolver.h"
-
 
 /***** UTILITIES *****/
 
@@ -197,7 +191,7 @@ void calc_matvec(double** A, double* b, int DIM, double* &C){
 /***** JACOBIAN *****/
 
 //calculate numerical jacobian, internal h = 1.e-8
-void calc_Jac(void fun(double* x, int DIM, double Fx[]), double* xn, int DIM, double** &Jac){
+void calc_Jac(void fun(double* x, double Fx[]), double* xn, int DIM, double** &Jac){
 
 	//declare the perturbed point xnm1 now equal to xn
 	double* xnm1 = (double*)malloc(DIM*sizeof(double)); if (!xnm1) return;
@@ -211,7 +205,7 @@ void calc_Jac(void fun(double* x, int DIM, double Fx[]), double* xn, int DIM, do
 	double* F_xnm1 = (double*)malloc(DIM*sizeof(double)); if (!F_xnm1) return;
 
 	//evaluating the function at xn (unperturbed)
-	fun(xn, DIM, F_xn);
+	fun(xn, F_xn);
 
 	for (int i = 0; i < DIM; i++){		//row, its dF
 		for (int j = 0; j < DIM; j++){	//col, its dx
@@ -219,7 +213,7 @@ void calc_Jac(void fun(double* x, int DIM, double Fx[]), double* xn, int DIM, do
 			//perturbing and evaluating the function at xnm1 (perturbed)
 			xnm1[j] += 1.e-8;
 			//
-			fun(xnm1, DIM, F_xnm1);
+			fun(xnm1, F_xnm1);
 
 			//evaluate the jacobian component dF[i]/dx[j]
 			Jac[i][j] = (F_xn[i] - F_xnm1[i]) / (xn[j] - xnm1[j]);
@@ -264,13 +258,14 @@ double nlsnewton(double fun(double x), double x0, double xtol, double Ftol){
 	//we declare the delta_x
 	double delta_x;
 
-	//we set x0_new and evaluate the function
+	//we set x0_new and evaluate the function, first x1 is dummy
 	x0_new = x0;
+	x1 = x0 + 10.;
 	//
 	Fx0 = fun(x0_new);
 
-	//we evaluate the norms of function and variables, first Dx is dummy
-	double Dx = 10.;
+	//we evaluate the norms of function and variables
+	double Dx = fabs(x0_new - x1);
 	double Fx = fabs(Fx0);
 	//
 	if (Fx < Ftol){
@@ -282,6 +277,14 @@ double nlsnewton(double fun(double x), double x0, double xtol, double Ftol){
 	int N_iter = 0;
 	//
 	double omega = 1.0;
+
+	//we setup the result txt file 
+	char filename[] = "nls_sys.txt";
+	//
+	FILE* fp1 = fopen(filename, "w");
+	//
+	fprintf(fp1, "NLE with Newton Method, omega = %f\n\n", omega);
+	fprintf(fp1, "xtol = %e\nFtol = %e\n\n", xtol, Ftol);
 
 	//entering the main calculation cycle
 	while (eval_DxFx(Dx, xtol, Fx, Ftol)){
@@ -311,20 +314,31 @@ double nlsnewton(double fun(double x), double x0, double xtol, double Ftol){
 		printf("IT%d\tDx = %e\n\tFx = %e\n\n", N_iter, Dx, Fx);
 		//getchar();
 
+		fprintf(fp1, "IT%d\tDx = %e\n\tFx = %e\n\n", N_iter, Dx, Fx);
+
 		//we advance the cycle
 		x0_new = x1;
 
 		//we have the MaxIter stop
 		if (N_iter >= 1e5){
-			printf("Max Iterations Exceeded\n");
+			printf("\nMax Iterations Exceeded\n");
+			fprintf(fp1, "\nMax Iterations Exceeded!\n");
 			break;
 		}
 	}
+
+	fprintf(fp1, "Optimal Solution reached in %d iterations.\n\n", N_iter);
+	fprintf(fp1, "x_opt = %e\n", x1);
+	fprintf(fp1, "F_opt = %e\n", Fx);
+
+	//close the file
+	fclose(fp1);
+
 	return x0_new;
 }
 
 // solver for vector system
-void nlsnewton_vec(void fun(double* x, int DIM, double Fx[]), double* x0, double xtol, double Ftol, int DIM, double xN[]){
+void nlsnewton_vec(void fun(double* x, double Fx[]), double* x0, double xtol, double Ftol, int DIM, double xN[]){
 
 	//we have the two iteration values and the function values
 	double* x1 = (double*)malloc(DIM*sizeof(double)); if (!x1) return;
@@ -349,7 +363,7 @@ void nlsnewton_vec(void fun(double* x, int DIM, double Fx[]), double* x0, double
 		xN[j] = x0[j];
 	}
 	//
-	fun(xN, DIM, Fx0);
+	fun(xN, Fx0);
 
 	//we evaluate the norms of function and variables, first Dx is dummy
 	double Dx = 10.;
@@ -364,13 +378,21 @@ void nlsnewton_vec(void fun(double* x, int DIM, double Fx[]), double* x0, double
 	//
 	double omega = 1.0;
 
+	//we setup the result txt file 
+	char filename[] = "nls_sys_vec.txt";
+	//
+	FILE* fp1 = fopen(filename, "w");
+	//
+	fprintf(fp1, "NLS with Newton Method, omega = %f\n\n", omega);
+	fprintf(fp1, "xtol = %e\nFtol = %e\n\n", xtol, Ftol);
+
 	//entering the main calculation cycle
 	while (eval_DxFx(Dx, xtol, Fx, Ftol)){
 
 		N_iter++;
 
 		//we evaluate the function at x0
-		fun(xN, DIM, Fx0);
+		fun(xN, Fx0);
 
 		//we evaluate the jacobian and its inverse at x0
 		calc_Jac(fun, xN, DIM, Jx0);
@@ -386,7 +408,7 @@ void nlsnewton_vec(void fun(double* x, int DIM, double Fx[]), double* x0, double
 		}
 
 		//we evaluate the function at x1
-		fun(x1, DIM, Fx1);
+		fun(x1, Fx1);
 
 		//we calculate the required differences (norm of step and fval):
 		Dx = norm2_vec_diff(xN, x1, DIM);
@@ -395,6 +417,8 @@ void nlsnewton_vec(void fun(double* x, int DIM, double Fx[]), double* x0, double
 
 		printf("IT%d\tDx = %e\n\tFx = %e\n\n", N_iter, Dx, Fx);
 		//getchar();
+
+		fprintf(fp1, "IT%d\tDx = %e\n\tFx = %e\n\n", N_iter, Dx, Fx);
 
 		//we advance the cycle
 		for (int j = 0; j < DIM; j++){
@@ -407,6 +431,19 @@ void nlsnewton_vec(void fun(double* x, int DIM, double Fx[]), double* x0, double
 			break;
 		}
 	}
+
+	fprintf(fp1, "Optimal Solution reached in %d iterations.\n\n", N_iter);
+	for (int j = 0; j < DIM; j++){
+		fprintf(fp1, "x%d_opt = %e\n", j, x1[j]);
+	}
+	fprintf(fp1, "\n");
+	for (int j = 0; j < DIM; j++){
+		fprintf(fp1, "F%d_opt = %e\n", j, Fx1[j]);
+	}
+
+	//close the file
+	fclose(fp1);
+
 	// free memory
 	free(x1);
 	free(Fx0);
