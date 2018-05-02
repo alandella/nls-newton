@@ -1,0 +1,21 @@
+NLE with Newton Method, omega = 1.000000
+
+xtol = 1.000000e-007
+Ftol = 1.000000e-006
+
+IT1	Dx = 1.824075e+003
+	Fx = 8.616150e+002
+
+IT2	Dx = 1.723073e+002
+	Fx = 1.180731e-002
+
+IT3	Dx = 2.361248e-003
+	Fx = 1.077387e-007
+
+IT4	Dx = 2.154570e-008
+	Fx = 0.000000e+000
+
+Optimal Solution reached in 4 iterations.
+
+x_opt = 1.998480e+003
+F_opt = 0.000000e+000
