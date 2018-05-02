@@ -14,6 +14,8 @@ void nlsnewton_vec()
 ```
 As they are the "actual solver", with the closest syntax as MATLAB fsolve. Some extras have been added as the relaxation parameter omega, and the dimensionality of the problem. The solver's architecture is based on dynamic allocation, which allows it to be faster than fsolve in most cases (by tuning omega).
 
+The solver yields a txt file with vector or matrix output, as it can be seen in the /tests/ folder.
+
 ### Prerequisites
 
 To implement the solver, a standard C/C++ IDE and compiler needs to be installed on the operative system.  To name a few, Visual Studio 20xx (Visual C++) for Windows or Emacs (GCC) for Linux.
