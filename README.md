@@ -1,6 +1,6 @@
 # nls-newton
 
-NLS and NLE solver using Newton's method, written in C and C++ compatible
+Explicit Newton-Raphson solver for scalar and vector NLEs 
 
 ## Getting Started
 
